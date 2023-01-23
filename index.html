@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check your KKN Progress</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-default.min.css">
+</head>
+<body>
+    <form class="card large" style="margin: 50px auto;" method="post" action="">
+        <fieldset>
+          <legend>Input your credential</legend>
+            <div class="input-group vertical">
+                <label for="username">UGM ID (without @*.ugm.ac.id)</label>
+                <input type="text" id="username" placeholder="UGM ID (without @*.ugm.ac.id)" required/>
+            </div>
+            <div class="input-group vertical">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Password" required/>
+            </div>
+        </fieldset>
+        
+        <div style="color: gray; padding: 10px;">
+            <small style="display: block;">This app not logged your credential, see this repo</small>
+            <small style="display: block;">Do With Your Own Risk (DWYOR)</small>
+        </div>
+        
+        <input type="submit" value="Check your progress" />
+        <div id="spinner" style="margin: auto;"></div>
+      </form>
+
+      <div id="result" style="margin:50px auto; width: 80%">
+      </div>
+
+      <div id="notification"></div>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js" integrity="sha512-STof4xm1wgkfm7heWqFJVn58Hm3EtS31XFaagaa8VMReCXAkQnJZ+jEy8PCC/iT18dFy95WcExNHFTqLyp72eQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+      <script>
+
+        const pretty_print = (title, data) => {
+            total_durasi = 0
+            return [`------------------------------------------\n${title}\n------------------------------------------\n${
+                    data.map((item, i) => {
+                        return `${i + 1}. ${item.RPP}\n${
+                            item.kegiatan.map(keg => {
+                                total_durasi += keg.durasi
+                                return `    ${keg.durasi} jam: ${keg.judul}\n`
+                            }).join("")}`
+                    }).join("")}\nTotal Jam: ${total_durasi} jam\n`, total_durasi]
+        }
+
+        const generate_report = (durasi) => {
+            total = durasi['Tema'] + durasi['Non Tema'] + durasi['Bantu']
+            return `Tema: ${durasi['Tema']}\nNon Tema: ${durasi['Non Tema']}\nBantu: ${durasi['Bantu']}\nTotal Jam: ${total} jam\nProgress ${total / 288 * 100}%`
+        }
+
+        $("form").submit(e => {
+            $("#notification").removeClass("toast")
+            $("#notification").text("")
+
+            $("#spinner").addClass("spinner")
+            $("input[type='submit']").prop('disabled', true);
+
+            const username = $("#username").val()
+            const password = $("#password").val()
+
+
+            $.post("https://faas-sgp1-18bc02ac.doserverless.co/api/v1/web/fn-bb218a42-b80a-49bd-af04-8dbcd59fed91/simaster/progress_kkn", {
+                username: username,
+                password: password
+            }).done(data => {
+                const total_durasi = {"Tema": 0, "Non Tema": 0, "Bantu": 0}
+                let content = ""
+                data.pokok.forEach(proker => {
+                    const [formated_output, durasi] = pretty_print(proker.title, proker.detail)
+                    content += formated_output
+                    total_durasi[proker.jenis] += durasi
+                })
+                
+                const [formated_output, durasi] = pretty_print("DETAIL PROKER BANTU", data.bantu)
+                content += formated_output
+                total_durasi["Bantu"] += durasi
+
+                console.log(total_durasi)
+
+                $("#result").html(`<pre>${generate_report(total_durasi)}\n${content}</pre>`)
+
+            }).fail(err => {
+                $("#notification").addClass("toast")
+                $("#notification").text(err.responseText)
+            }).always(() => {
+                $("#spinner").removeClass("spinner")
+                $("input[type='submit']").prop('disabled', false);
+            })
+
+            e.preventDefault()
+        })
+
+      </script>
+</body>
+</html>
