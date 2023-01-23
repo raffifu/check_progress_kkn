@@ -1,0 +1,19 @@
+parameters: {}
+environment: {}
+packages:
+  - name: simaster
+    shared: false
+    environment: {}
+    parameters: {}
+    annotations: {}
+    functions:
+      - name: progress_kkn
+        binary: false
+        main: ""
+        runtime: python:default
+        web: true
+        websecure: false
+        parameters: {}
+        environment: {}
+        annotations: {}
+        limits: {}
